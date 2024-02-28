@@ -5,17 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Audio Surround Converter</title>
-</head>
+  <script src="lame.min.js" defer></script>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-<body>
-
-    <style>
-        body {
+  <style>
+    body {
       font-family: 'Arial', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 50px;
+      /* margin: 50px; */
+      padding: 0;
+      margin: 0;
     }
 
     button {
@@ -23,6 +24,8 @@
       padding: 8px 16px;
       font-size: 16px;
       cursor: pointer;
+      border-radius: 7px ;
+      border: none;
     }
 
     canvas {
@@ -30,16 +33,179 @@
       border: 1px solid #ccc;
       border-radius: 8px;
     }
-    </style>
+    #loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader {
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#loadingText {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.section1{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  /* background: linear-gradient(to top, #accbee 0%, #e7f0fd 100%); */
+  background: linear-gradient(to top, #7028e4 0%, #e5b2ca 100%);
+ /* background: url('https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'); */
+ background-repeat: no-repeat;
+ background-size: cover;
+ background-position: center;
+}
+
+  </style>
+</head>
+
+<body>
+  <div id="loadingOverlay" style="display: none;">
+    <div class="loader"></div>
+    <div id="loadingText">Converting...</div>
+  </div>
+  <div class="section1">
   <input type="file" id="audioInput" accept=".mp3, .wav">
   <button onclick="processAudio()">Convert to 5.1</button>
   <button onclick="playConvertedAudio()">Play Converted Audio</button>
   <button onclick="stopAudio()">Stop</button>
-  <a id="downloadLink" style="display: none;" download="converted_audio.wav">Download Converted Audio</a>
-  <canvas id="speakersCanvas" width="500" height="200"></canvas>
-   <button onclick="downloadConvertedAudio()" id="download">download</button>
+  <a id="downloadLink" style="display: none;" download="converted_audio.mp3">Download Converted Audio</a>
+  <canvas style="display: none;" id="speakersCanvas" width="500" height="200"></canvas>
+  <button onclick="downloadConvertedAudio()" id="download">Download</button>
+</div>
+  <style>
+    .speaker-container{
+      width: 100%;
+      height: 600px;
+      /* background-color: #3498db; */
+      background: url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+    }
+
+    .speakers{
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      column-gap: 50px;
+    }
+
+    .speaker2{
+      width: 180px;
+      height: 180px;
+      border: solid 1px rgb(71, 65, 65);
+      background-color: rgb(163, 148, 148);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    .circle{
+      width: 80%;
+      height: 80%;
+      border: solid 1px rgb(235, 245, 133);
+      border-radius: 100%;
+      box-shadow: rgba(244, 244, 247, 0.2) 0px 7px 29px 0px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+     
+    }
+.center{
+  width: 50%;
+      height: 50%;
+      /* border: solid 1px rgb(235, 245, 133); */
+      border-radius: 100%;
+  background-color: rgba(0, 0, 0, 0.543);
+ 
+      box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
+}
+    .speaker1,.speaker3{
+      width: 150px;
+      height: 330px;
+      border: solid 1px rgb(125, 100, 100);
+      background-color: rgb(142, 178, 214);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      justify-content: center;
+      padding: 35px;
+      row-gap: 20px;
+    }
+
+    .gelatine {
+  animation: gelatine 0.5s infinite;
+}
+@keyframes gelatine {
+  from, to { transform: scale(1, 1); }
+  25% { transform: scale(0.9, 1.1); }
+  50% { transform: scale(1.1, 0.9); }
+  75% { transform: scale(0.95, 1.05); }
+}
+  </style>
+
+  <div class="speaker-container">
+    <div class="speakers">
+      <div class="speaker1">
+        <div class="circle">
+          <div id="base1" class="center"></div>
+        </div>
+        <div class="circle">
+          <div id="base2" class="center"></div>
+        </div>
+        <div class="circle">
+          <div id="base3" class="center"></div>
+        </div>
+        
+      </div>
+      <div class="speaker2">
+        <div class="circle">
+          <div id="base4" class="center"></div>
+        </div>
+      </div>
+      <div class="speaker3">
+        <div class="circle">
+          <div id="base5" class="center"></div>
+        </div>
+        <div class="circle">
+          <div id="base6" class="center"></div>
+        </div>
+        <div class="circle">
+          <div id="base7" class="center"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let analyser;
     let speakersCanvas = document.getElementById('speakersCanvas');
     let downloadLink = document.getElementById('downloadLink');
     let audioBuffer;
@@ -76,26 +242,55 @@
     }
 
     function processAudio() {
-      if (audioBuffer) {
-        const stereoBuffer = audioBuffer;
-        const surroundBuffer = convertTo5_1(stereoBuffer);
-        audioBuffer = surroundBuffer;
-        displayVisualRepresentation();
-        downloadLink.style.display = 'inline';
-      } else {
-        alert("Please select an audio file first.");
-      }
-    }
+  if (audioBuffer) {
+    showLoadingOverlay("Converting...");
+    setTimeout(() => {
+      const stereoBuffer = audioBuffer;
+      const surroundBuffer = convertTo5_1(stereoBuffer);
+      audioBuffer = surroundBuffer;
+      displayVisualRepresentation();
+      downloadLink.style.display = 'inline';
+      hideLoadingOverlay();
+    }, 2000); // Simulating a conversion time of 2 seconds
+  } else {
+    alert("Please select an audio file first.");
+  }
+}
 
-    
-    // ... (previous JavaScript code)
+function downloadConvertedAudio() {
+  if (audioBuffer) {
+    showLoadingOverlay("Downloading...");
+    setTimeout(() => {
+      const audioData = audioBuffer.getChannelData(0);
+      const mp3Blob = convertToMP3(audioData);
+      const dataUrl = URL.createObjectURL(mp3Blob);
+      downloadLink.href = dataUrl;
+      downloadLink.style.display = 'inline';
+      hideLoadingOverlay();
+    }, 2000); // Simulating a download time of 2 seconds
+  } else {
+    alert("Please convert the audio first.");
+  }
+}
+
+function showLoadingOverlay(text) {
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingText = document.getElementById('loadingText');
+  loadingText.textContent = text;
+  loadingOverlay.style.display = 'flex';
+}
+
+function hideLoadingOverlay() {
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  loadingOverlay.style.display = 'none';
+}
+
 
     function displayVisualRepresentation() {
       const canvas = document.getElementById('speakersCanvas');
       const context = canvas.getContext('2d');
       context.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Basic visual representation - adjust as needed
       const speakerPositions = [
         { x: 50, y: 100 },
         { x: 100, y: 50 },
@@ -115,46 +310,121 @@
     }
 
     function playConvertedAudio() {
-      if (audioBuffer) {
-        source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        source.start();
+  if (audioBuffer) {
+    source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
 
-        animateSpeakers(); // Start the animation during playback
-      } else {
-        alert("Please convert the audio first.");
-      }
-    }
+    // Create and connect analyser node
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
+
+    source.start();
+
+    animateSpeakers();
+  } else {
+    alert("Please convert the audio first.");
+  }
+}
 
     function animateSpeakers() {
-      const canvas = document.getElementById('speakersCanvas');
-      const context = canvas.getContext('2d');
-      const circleRadius = 10;
-      const spaceBetweenCircles = 20;
+  const canvas = document.getElementById('speakersCanvas');
+  const context = canvas.getContext('2d');
+  const circleRadius = 10;
+  const spaceBetweenCircles = 20;
 
-      function drawFrame() {
-        context.clearRect(0, 0, canvas.width, canvas.height);
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 256;
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
 
-        const speakerCount = 6;
-        const totalWidth = (speakerCount - 1) * spaceBetweenCircles + speakerCount * 2 * circleRadius;
+  const speakerCount = 6;
+  const totalWidth = (speakerCount - 1) * spaceBetweenCircles + speakerCount * 2 * circleRadius;
 
-        for (let i = 0; i < speakerCount; i++) {
-          const x = (canvas.width - totalWidth) / 2 + i * (2 * circleRadius + spaceBetweenCircles);
-          const y = canvas.height / 2 + Math.sin(Date.now() / 500 + i) * 20; // Adjust the amplitude as needed
+  function drawFrame() {
+    analyser.getByteFrequencyData(dataArray);
 
-          context.beginPath();
-          context.arc(x, y, circleRadius, 0, 2 * Math.PI);
-          context.fillStyle = 'red';
-          context.fill();
-          context.closePath();
-        }
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
-        requestAnimationFrame(drawFrame);
-      }
+    for (let i = 0; i < speakerCount; i++) {
+      const x = (canvas.width - totalWidth) / 2 + i * (2 * circleRadius + spaceBetweenCircles);
+      const y = canvas.height / 2 + Math.sin(Date.now() / 500 + i) * 20;
 
-      drawFrame();
+      context.beginPath();
+      context.arc(x, y, circleRadius, 0, 2 * Math.PI);
+
+      // Apply gelatine class based on frequency range
+      const frequency = getFrequency(i, dataArray);
+      applyGelatineClass(i, frequency);
+
+      context.fillStyle = 'red';
+      context.fill();
+      context.closePath();
     }
+
+    requestAnimationFrame(drawFrame);
+  }
+
+  drawFrame();
+}
+let targetFrequency = 0;
+
+function getFrequency() {
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(dataArray);
+
+  // Calculate the average frequency
+  const sum = dataArray.reduce((acc, value) => acc + value, 0);
+  const averageFrequency = sum / dataArray.length;
+
+  // Update targetFrequency with the averageFrequency
+  targetFrequency = averageFrequency;
+
+  // Define your frequency ranges
+  const lowRange = [20, 80];
+  const mediumRange = [80, 320];
+  const highRange = [320, 1200];
+
+  // Function to check if frequency is within a specific range
+  function isFrequencyInRange(min, max) {
+    return averageFrequency >= min && averageFrequency <= max;
+  }
+
+  // Apply gelatine class based on frequency ranges
+  const base4 = document.getElementById('base4');
+  const base3 = document.getElementById('base3');
+  const base7 = document.getElementById('base7');
+  const base2 = document.getElementById('base2');
+  const base6 = document.getElementById('base6');
+
+  base4.classList.toggle('gelatine', isFrequencyInRange(...lowRange));
+  base3.classList.toggle('gelatine', isFrequencyInRange(...mediumRange));
+  base7.classList.toggle('gelatine', isFrequencyInRange(...mediumRange));
+  base2.classList.toggle('gelatine', isFrequencyInRange(...highRange));
+  base6.classList.toggle('gelatine', isFrequencyInRange(...highRange));
+
+  // Call getFrequency again recursively to keep updating based on audio input
+  requestAnimationFrame(getFrequency);
+}
+
+
+
+function applyGelatineClass(index, frequency) {
+  const baseId = `base${index + 1}`;
+  const baseElement = document.getElementById(baseId);
+
+  if (frequency >= 20 && frequency <= 80) {
+    baseElement.classList.add('gelatine');
+  } else if (frequency > 80 && frequency <= 320) {
+    baseElement.classList.remove('gelatine');
+  } else if (frequency > 320 && frequency <= 1200) {
+    baseElement.classList.add('gelatine');
+  } else {
+    baseElement.classList.remove('gelatine');
+  }
+}
+
 
     function stopAudio() {
       if (source) {
@@ -162,32 +432,47 @@
       }
     }
 
-    function downloadConvertedAudio() {
-      if (audioBuffer) {
-        const audioData = audioBuffer.getChannelData(0);
-        const wavBlob = new Blob([floatTo16BitPCM(audioData)], { type: 'audio/wav' });
-        downloadLink.href = URL.createObjectURL(wavBlob);
-      } else {
-        alert("Please convert the audio first.");
-      }
+    // function downloadConvertedAudio() {
+    //   if (audioBuffer) {
+    //     const audioData = audioBuffer.getChannelData(0);
+    //     const mp3Blob = convertToMP3(audioData);
+
+    //     const dataUrl = URL.createObjectURL(mp3Blob);
+    //     downloadLink.href = dataUrl;
+    //     downloadLink.style.display = 'inline';
+    //   } else {
+    //     alert("Please convert the audio first.");
+    //   }
+    // }
+
+    function convertToMP3(inputData) {
+  const lame = new lamejs();
+  const channels = 1;
+  const sampleRate = audioContext.sampleRate;
+
+  const mp3Encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+  const mp3Data = [];
+
+  const samplesPerFrame = 1152;
+  const sampleBlockSize = samplesPerFrame * channels;
+
+  for (let i = 0; i < inputData.length; i += sampleBlockSize) {
+    const inputSlice = inputData.subarray(i, i + sampleBlockSize);
+    const mp3Buffer = new Int8Array(mp3Encoder.encodeBuffer(inputSlice, false));
+    if (mp3Buffer.length > 0) {
+      mp3Data.push(mp3Buffer);
     }
+  }
 
-    function floatTo16BitPCM(output) {
-      const buffer = new ArrayBuffer(output.length * 2);
-      const view = new DataView(buffer);
-      let offset = 0;
+  const finalBuffer = new Int8Array(mp3Encoder.flush());
+  if (finalBuffer.length > 0) {
+    mp3Data.push(finalBuffer);
+  }
 
-      for (let i = 0; i < output.length; i++, offset += 2) {
-        const s = Math.max(-1, Math.min(1, output[i]));
-        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-      }
+  const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+  return mp3Blob;
+}
 
-      return buffer;
-    }
-
-    document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
-  });
   </script>
 </body>
 
